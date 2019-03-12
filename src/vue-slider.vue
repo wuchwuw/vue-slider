@@ -18,9 +18,6 @@
 </template>
 
 <script>
-const shared = {
-  width: window.innerWidth
-}
 
 export default {
   name: 'VueSlider',
@@ -39,20 +36,6 @@ export default {
     if (this.images.length) {
       this.initShard()
       this.initSlider()
-    }
-  },
-  watch: {
-    images (val, oldval) {
-      this.$nextTick(() => {
-        console.log('images updated')
-        this.initShard()
-        this.initSlider()
-      })
-      // if (val.length && !oldval.length) {
-      //   console.log('images updated')
-      //   this.initShard()
-      //   this.initSlider()
-      // }
     }
   },
   methods: {
