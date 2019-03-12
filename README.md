@@ -1,0 +1,1 @@
+## a slider component for Vue2.x

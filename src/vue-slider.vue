@@ -1,75 +1,176 @@
 <template>
   <div id="slider">
-    <div id="slider-wrap">
+    <div id="slider-wrap" @touchstart="onTouchStart" @touchmove="onTouchMove" @touchend="onTouchEnd">
       <div class="slider-item" v-for="item in images" :key="item">
         <img class="slider-img" :src="item" alt="">
       </div>
+    </div>
+    <div class="dot">
+      <span
+        class="dot-item"
+        :class="currentIndex === index ? 'active' : ''"
+        v-for="index in images.length"
+        :key="index"
+      >
+      </span>
     </div>
   </div>
 </template>
 
 <script>
-
 const shared = {
   width: window.innerWidth
 }
 
 export default {
   name: 'VueSlider',
+  props: {
+    images: {
+      type: Array,
+      default: () => []
+    }
+  },
   data () {
     return {
-      images: [
-        'http://y.gtimg.cn/music/common/upload/MUSIC_FOCUS/1205042.jpg',
-        'http://y.gtimg.cn/music/common/upload/MUSIC_FOCUS/1203123.jpg',
-        'http://y.gtimg.cn/music/common/upload/MUSIC_FOCUS/1204325.jpg',
-        'http://y.gtimg.cn/music/common/upload/MUSIC_FOCUS/1202412.jpg',
-        'http://y.gtimg.cn/music/common/upload/MUSIC_FOCUS/1203899.jpg'
-      ],
-      currentIndex: shared.width
+      currentIndex: 1
     }
   },
   mounted () {
-    this.initSlider()
+    if (this.images.length) {
+      this.initShard()
+      this.initSlider()
+    }
+  },
+  watch: {
+    images (val, oldval) {
+      this.$nextTick(() => {
+        console.log('images updated')
+        this.initShard()
+        this.initSlider()
+      })
+      // if (val.length && !oldval.length) {
+      //   console.log('images updated')
+      //   this.initShard()
+      //   this.initSlider()
+      // }
+    }
   },
   methods: {
-    initSlider () {
-      const length = this.images.length + 2
-      let wrap = document.getElementById('slider-wrap')
-      let items = document.getElementsByClassName('slider-item')
-      this.handleLoop(wrap, items)
-      wrap.style.width = `${shared.width * length}px`
-      for (let i = 0; i < items.length; i++) {
-        items[i].style.width = `${shared.width}px`
+    setStyle (el, styleName, style) {
+      el && (el.style[styleName] = style)
+    },
+    initShard () {
+      this.shared = {
+        windowWidth: window.innerWidth,
+        currentLeft: window.innerWidth,
+        wrap: document.getElementById('slider-wrap'),
+        items: document.getElementsByClassName('slider-item'),
+        len: this.images.length
       }
-      this.transitionWrap(wrap)
+      this.touch = {}
+      this.timer = null
     },
-    transitionWrap (wrap) {
-      wrap.style.transform = `translate3d(${-this.currentIndex}px, 0px, 0px)`
-      setInterval(() => {
-        this.next(wrap)
-      }, 2000)
+    initSlider () {
+      let { wrap, items, len, windowWidth, currentLeft } = this.shared
+      const loopLength = len + 2
+      this.handleLoop(wrap, items)
+      this.setStyle(wrap, 'width', `${windowWidth * loopLength}px`)
+      this.transitionWrap(-currentLeft, 0)
+      for (let i = 0; i < items.length; i++) {
+        this.setStyle(items[i], 'width', `${windowWidth}px`)
+      }
+      this.loopStart()
     },
-    handleLoop (wrap, items) {
+    handleLoop () {
+      let { wrap, items } = this.shared
       let firstChild = items[0].cloneNode(true)
       let lastChild = items[items.length - 1].cloneNode(true)
       wrap.insertBefore(lastChild, items[0])
       wrap.appendChild(firstChild)
       wrap.addEventListener('transitionend', () => {
-        if (this.currentIndex === shared.width * 6) {
-          this.currentIndex = shared.width
-          wrap.style.transitionDuration = '0ms'
-          wrap.style.transform = `translate3d(${-this.currentIndex}px, 0px, 0px)`
+        let { currentLeft, len, windowWidth } = this.shared
+        if (currentLeft > windowWidth * len) {
+          currentLeft = windowWidth
+          this.transitionWrap(-currentLeft, 0)
+          this.updateShared({ currentLeft })
+        } else if (currentLeft === 0){
+          currentLeft = windowWidth * len
+          this.transitionWrap(-currentLeft, 0)
+          this.updateShared({ currentLeft })
         }
       })
     },
-    next (wrap) {
-      // 375 750 1225 1500 1875 2250
-      this.currentIndex += shared.width
-      wrap.style.transitionDuration = '300ms'
-      wrap.style.transform = `translate3d(${-this.currentIndex}px, 0px, 0px)`
+    transitionWrap (left, duration) {
+      let { wrap } = this.shared
+      this.setStyle(wrap, 'transitionDuration', `${duration}ms`)
+      this.setStyle(wrap, 'transform', `translate3d(${left}px, 0px, 0px)`)
+    },
+    next () {
+      let { wrap, windowWidth, currentLeft } = this.shared
+      currentLeft += windowWidth
+      this.transitionWrap(-currentLeft, 300)
+      this.updateCurrentIndex(true)
+      this.updateShared({ currentLeft })
     },
     prev () {
-
+      let { wrap, windowWidth, currentLeft } = this.shared
+      currentLeft -= windowWidth
+      this.transitionWrap(-currentLeft, 300)
+      this.updateCurrentIndex(false)
+      this.updateShared({ currentLeft })
+    },
+    loopStart () {
+      !this.timer && (this.timer = setInterval(() => {
+        this.next()
+      }, 4000))
+    },
+    loopStop () {
+      clearInterval(this.timer)
+      this.timer = null
+    },
+    updateCurrentIndex (add) {
+      let cur  = this.currentIndex
+      cur = add
+        ? ++ cur > this.images.length
+          ? 1 : cur
+        : -- cur < 1
+          ? this.images.length : cur
+      this.currentIndex = cur
+    },
+    updateShared (o) {
+      Object.keys(o).forEach(key => {
+        this.shared[key] = o[key]
+      })
+    },
+    onTouchStart (e) {
+      this.loopStop()
+      let touch = e.touches[0]
+      this.touch.pageY = touch.pageY
+      this.touch.pageX = touch.pageX
+    },
+    onTouchMove (e) {
+      let { wrap, currentLeft } = this.shared
+      let touch = e.touches[0]
+      let diff = touch.pageX - this.touch.pageX
+      this.touch.diff = diff
+      this.transitionWrap(-currentLeft + diff, 0)
+    },
+    onTouchEnd () {
+      let { diff } = this.touch
+      let { currentLeft, wrap, windowWidth } = this.shared
+      let left = diff + -currentLeft
+      let abs = Math.abs(left) % windowWidth
+      if (Math.abs(diff) > windowWidth / 2) {
+        if (diff < 0) {
+          this.next()
+        } else {
+          this.prev()
+        }
+      } else {
+        this.transitionWrap(-currentLeft, 300)
+      }
+      this.touch.diff = 0
+      this.loopStart()
     }
   }
 }
@@ -81,9 +182,9 @@ export default {
     width: 100%;
     font-size: 0;
     overflow: hidden;
+    position: relative;
   }
   #slider-wrap {
-    position: relative;
     overflow: hidden;
   }
   .slider-item {
@@ -92,5 +193,25 @@ export default {
   .slider-img {
     width: 100%;
     -webkit-backface-visibility: hidden
+  }
+  .dot {
+    position: absolute;
+    bottom: 5px;
+    left: 50%;
+    transform: translateX(-50%)
+  }
+  .dot-item {
+    display: inline-block;
+    height: 8px;
+    width: 8px;
+    background: rgb(255, 255, 255, 0.5);
+    border-radius: 50%;
+    margin-right: 5px;
+  }
+  .dot-item:last-child {
+    margin-right: 0px;
+  }
+  .dot-item.active {
+    background: #fff;
   }
 </style>
