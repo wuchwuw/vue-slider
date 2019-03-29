@@ -4,7 +4,7 @@ A simple slider component for Vue2.x
 
 ### Installation
 
-    npm install vue-slider -D
+    npm install vue-slider
 
 ### Usage
 
