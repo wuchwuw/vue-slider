@@ -142,7 +142,6 @@
         let { diff } = this.touch
         let { currentLeft, wrap, windowWidth } = this.shared
         let left = diff + -currentLeft
-        let abs = Math.abs(left) % windowWidth
         if (Math.abs(diff) > windowWidth / 2) {
           if (diff < 0) {
             this.next()
