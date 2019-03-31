@@ -4,11 +4,11 @@ A simple slider component for Vue2.x
 
 ### Installation
 
-    npm install vue-slider
+    npm install @wuchong/vue-slider
 
 ### Usage
 
-    import Slider from 'vue-slider'
+    import Slider from '@wuchong/vue-slider'
 
     <template>
       <Slider :images="[]" :interval="3000"></Slider>
