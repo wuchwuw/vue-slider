@@ -1,5 +1,5 @@
 {
-  "name": "vue-slider",
+  "name": "@wuchong/vue-slider",
   "version": "1.0.0",
   "description": "a slider component for Vue2.x",
   "main": "src/vue-slider.vue",
